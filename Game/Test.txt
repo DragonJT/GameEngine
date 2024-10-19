@@ -1,0 +1,9 @@
+public class MyClass
+{
+    public int Method()
+    {
+        ConsoleLog();
+        ConsoleLog();
+        return 9;
+    }
+}

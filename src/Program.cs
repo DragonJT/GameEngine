@@ -143,6 +143,8 @@ static class GLFW{
     public const int GLFW_KEY_RIGHT_SUPER = 347;
     public const int GLFW_KEY_MENU = 348;
 
+    public const int GLFW_MOD_CONTROL = 0x0002;
+
     public const int GLFW_RELEASE = 0;
     public const int GLFW_PRESS = 1;
     public const int GLFW_REPEAT = 2;
@@ -825,7 +827,7 @@ static class Program{
         GLFWHelper.SetKeyCallback(KeyCallback);
 
         var fontRenderer = new FontRenderer("Fonts/Roboto-Medium.ttf", 2048, 0.1f);
-        var codeEditor = new CodeEditor();
+        var codeEditor = new CodeEditor("Game/Test.txt");
 
         while(GLFW.glfwWindowShouldClose(window) == 0){
             memory.size = 0;

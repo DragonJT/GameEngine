@@ -1,12 +1,15 @@
 class CodeEditor{
-    string code = "";
+    string code;
     int cursor = 0;
     float fontSize = 0.2f;
+    string filePath;
 
-    public CodeEditor(){
+    public CodeEditor(string filePath){
         Program.charCallback += CharCallback;
         Program.keyCallback += KeyCallback;
         Program.draw += Draw;
+        this.filePath = filePath;
+        code = File.ReadAllText(filePath);
     }
 
     void Insert(string value){
@@ -64,6 +67,14 @@ class CodeEditor{
                 if(cursor < code.Length){
                     cursor++;
                 }
+            }
+        }
+        if(action == GLFW.GLFW_PRESS && (mods|GLFW.GLFW_MOD_CONTROL) != 0){
+            if(key == GLFW.GLFW_KEY_S){
+                File.WriteAllText(filePath, code);
+            }
+            if(key == GLFW.GLFW_KEY_R){
+                Compiler.Run(code);
             }
         }
     }
