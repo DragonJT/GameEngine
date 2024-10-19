@@ -12,6 +12,7 @@ static class Kernel32{
 delegate void CursorPosCallbackDelegate(IntPtr window, double xpos, double ypos);
 delegate void MouseButtonCallbackDelegate(IntPtr window, int button, int action, int mods);
 delegate void KeyCallbackDelegate(IntPtr window, int key, int scancode, int action, int mods);
+delegate void CharCallbackDelegate(IntPtr window, uint codepoint);
 
 static class GLFW{
     private const string DllFilePath = @"glfw3.dll";
@@ -144,6 +145,7 @@ static class GLFW{
 
     public const int GLFW_RELEASE = 0;
     public const int GLFW_PRESS = 1;
+    public const int GLFW_REPEAT = 2;
     public const int GLFW_MOUSE_BUTTON_1 = 0;
     public const int GLFW_MOUSE_BUTTON_2 = 1;
     public const int GLFW_MOUSE_BUTTON_LEFT = GLFW_MOUSE_BUTTON_1;
@@ -187,6 +189,9 @@ static class GLFW{
     public extern static void glfwSetCursorPosCallback(IntPtr window, IntPtr cursorPosCallback);
 
     [DllImport(DllFilePath , CallingConvention = CallingConvention.Cdecl)]
+    public extern static void glfwSetCharCallback(IntPtr window, IntPtr charCallback);
+
+    [DllImport(DllFilePath , CallingConvention = CallingConvention.Cdecl)]
     public extern static void glfwGetCursorPos(IntPtr window, IntPtr xpos, IntPtr ypos);
 
     [DllImport(DllFilePath , CallingConvention = CallingConvention.Cdecl)]
@@ -217,6 +222,11 @@ static class GLFWHelper {
     public static void SetKeyCallback(KeyCallbackDelegate keyCallbackDelegate){
         var ptr = Marshal.GetFunctionPointerForDelegate(keyCallbackDelegate);
         GLFW.glfwSetKeyCallback(Program.window, ptr);
+    }
+
+    public static void SetCharCallback(CharCallbackDelegate charCallbackDelegate){
+        var ptr = Marshal.GetFunctionPointerForDelegate(charCallbackDelegate);
+        GLFW.glfwSetCharCallback(Program.window, ptr);
     }
 
     public static Vector2 GetCursorPosition(){
@@ -631,7 +641,21 @@ class FontRenderer{
     DynamicTextureRenderer2D dynamicTextureRenderer2D;
 
     public float FontHeight(float characterScale){
-        return 2000 * fontScale * characterScale;
+        return 1800 * fontScale * characterScale;
+    }
+
+    public float LineHeight(float characterScale){
+        return 2200 * fontScale * characterScale;
+    }
+
+    public float MeasureCharacter(char c, float characterScale){
+        if(c == ' '){
+            return FontHeight(characterScale) * 0.5f;
+        }
+        else if(characterData.TryGetValue(c, out CharacterData? character)){
+            return character.glyphData.AdvanceWidth * fontScale * characterScale;
+        }
+        return 0;
     }
 
     public FontRenderer(string pathToFont, int textureSize, float fontScale){
@@ -668,7 +692,7 @@ class FontRenderer{
             var maxX = (int)(posX + glyphData.MaxX * fontScale);
             if(minX < 0 || maxX >= width || minY < 0 || maxY >= height){
                 posX = 0;
-                posY += (int)(fontScale * 2000);
+                posY += (int)LineHeight(1);
                 minY = (int)(posY + glyphData.MinY * fontScale);
                 minX = (int)(posX + glyphData.MinX * fontScale);
                 maxY = (int)(posY + glyphData.MaxY * fontScale);
@@ -739,25 +763,27 @@ class FontRenderer{
         if(c == ' '){
             return FontHeight(characterScale) * 0.5f;
         }
-        var character = characterData[c];
-        var minX = character.glyphData.MinX * fontScale * characterScale;
-        var minY = character.glyphData.MinY * fontScale * characterScale;
-        var w = character.glyphData.Width * fontScale * characterScale;
-        var h = character.glyphData.Height * fontScale * characterScale;
-        var fontHeight = FontHeight(characterScale);
+        else if(characterData.TryGetValue(c, out CharacterData? character)){
+            var minX = character.glyphData.MinX * fontScale * characterScale;
+            var minY = character.glyphData.MinY * fontScale * characterScale;
+            var w = character.glyphData.Width * fontScale * characterScale;
+            var h = character.glyphData.Height * fontScale * characterScale;
+            var fontHeight = FontHeight(characterScale);
 
-        Vector2[] points = [
-            new Vector2(position.x + minX, position.y + fontHeight - minY), 
-            new Vector2(position.x + minX + w, position.y + fontHeight - minY), 
-            new Vector2(position.x + minX + w, position.y + fontHeight - minY - h), 
-            new Vector2(position.x + minX, position.y + fontHeight - minY - h)];
-        Vector2[] uvs = [
-            character.uvMin, 
-            new Vector2(character.uvMax.x, character.uvMin.y), 
-            character.uvMax,
-            new Vector2(character.uvMin.x, character.uvMax.y)];
-        dynamicTextureRenderer2D.DrawShape(points, uvs, color);
-        return character.glyphData.AdvanceWidth * fontScale * characterScale;
+            Vector2[] points = [
+                new Vector2(position.x + minX, position.y + fontHeight - minY), 
+                new Vector2(position.x + minX + w, position.y + fontHeight - minY), 
+                new Vector2(position.x + minX + w, position.y + fontHeight - minY - h), 
+                new Vector2(position.x + minX, position.y + fontHeight - minY - h)];
+            Vector2[] uvs = [
+                character.uvMin, 
+                new Vector2(character.uvMax.x, character.uvMin.y), 
+                character.uvMax,
+                new Vector2(character.uvMin.x, character.uvMax.y)];
+            dynamicTextureRenderer2D.DrawShape(points, uvs, color);
+            return character.glyphData.AdvanceWidth * fontScale * characterScale;
+        }
+        return 0;
     }
 
     public float DrawText(Vector2 position, string text, float characterScale, Color color){
@@ -776,6 +802,17 @@ class FontRenderer{
 static class Program{
     public static Buffer memory = new (5000);
     public static IntPtr window;
+    public static Action<char> charCallback = delegate{};
+    public static Action<int,int,int,int> keyCallback = delegate{};
+    public static Action<FontRenderer> draw = delegate{};
+
+    static void CharCallback(IntPtr window, uint codepoint){
+        charCallback((char)codepoint);
+    }
+
+    static void KeyCallback(IntPtr window, int key, int scancode, int action, int mods){
+        keyCallback(key, scancode, action, mods);
+    }
 
     static void Main(){
         if(GLFW.glfwInit() == 0){
@@ -784,7 +821,11 @@ static class Program{
         window = GLFW.glfwCreateWindow(2000,1400,"GameEngine", IntPtr.Zero, IntPtr.Zero);
         GLFW.glfwMakeContextCurrent(window);
         GL.Init(GLFW.glfwGetProcAddress);
+        GLFWHelper.SetCharCallback(CharCallback);
+        GLFWHelper.SetKeyCallback(KeyCallback);
+
         var fontRenderer = new FontRenderer("Fonts/Roboto-Medium.ttf", 2048, 0.1f);
+        var codeEditor = new CodeEditor();
 
         while(GLFW.glfwWindowShouldClose(window) == 0){
             memory.size = 0;
@@ -793,11 +834,7 @@ static class Program{
             var windowSize = GLFWHelper.GetWindowSize();
             GL.glViewport(0,0,windowSize.x, windowSize.y);
 
-            fontRenderer.DrawRect(new Rect(75,100,600,fontRenderer.FontHeight(0.22f)), Color.White);
-            fontRenderer.DrawText(new Vector2(100,100), "HelloWorld", 0.2f, Color.Blue);
-            fontRenderer.DrawText(new Vector2(100,300), "The cat crossed the road.", 1f, Color.Red);
-            fontRenderer.DrawText(new Vector2(100,500), "The mighty mongoose will attack you.", 0.5f, Color.Black);
-            fontRenderer.DrawText(new Vector2(100,700), "Woolly mammoths don't eat fresh fish.", 0.6f, Color.White);
+            draw(fontRenderer);
             fontRenderer.Draw();
             
             GLFW.glfwSwapBuffers(window);
