@@ -76,6 +76,13 @@ class CodeEditor{
             if(key == GLFW.GLFW_KEY_R){
                 Compiler.Run(code);
             }
+            if(key == GLFW.GLFW_KEY_O){
+                Compiler.Run(code);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo{
+                    FileName = "Game\\index.html",
+                    UseShellExecute = true
+                });
+            }
         }
     }
 

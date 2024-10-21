@@ -2,8 +2,8 @@ public class MyClass
 {
     public int Method()
     {
-        ConsoleLog();
-        ConsoleLog();
+        ConsoleLog(4);
+        ConsoleLog(5);
         return 9;
     }
 }

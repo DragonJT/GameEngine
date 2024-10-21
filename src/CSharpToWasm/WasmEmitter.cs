@@ -77,19 +77,29 @@ enum Blocktype
     i32 = 0x7f,
 }
 
+class WasmVariable(Valtype valtype, string name){
+    public Valtype valtype = valtype;
+    public string name = name;
+    public int id = -1;
+}
+
 class WasmInstruction(Opcode opcode, object? data = null){
     public Opcode opcode = opcode;
     public object? data = data;
 }
 
-class WasmImportFunction(string name, string javascript){
+class WasmImportFunction(Valtype returnType, string name, WasmVariable[] parameters, string javascript){
     public string name = name;
+    public Valtype returnType = returnType;
+    public WasmVariable[] parameters = parameters;
     public int id = -1;
     public string javascript = javascript;
 }
 
-class WasmFunction(bool export, string name){
+class WasmFunction(bool export, Valtype returnType, string name, WasmVariable[] parameters){
     public List<WasmInstruction> instructions = [];
+    public Valtype returnType = returnType;
+    public WasmVariable[] parameters = parameters;
     public bool export = export;
     public string name = name;
     public int id = -1;
@@ -231,15 +241,25 @@ class WasmEmitter(string filePath){
 
         List<byte[]> importSection = [];
         foreach(var f in wasmImportFunctions){
-            importSection.Add([..WasmHelper.String("env"), ..WasmHelper.String(f.name), (byte)ExportType.Func, ..WasmHelper.UnsignedLEB128((uint)f.id)]);
+            importSection.Add([
+                ..WasmHelper.String("env"), 
+                ..WasmHelper.String(f.name),
+                (byte)ExportType.Func, 
+                ..WasmHelper.UnsignedLEB128((uint)f.id)]);
         }
 
         List<byte[]> typeSection = [];
         foreach(var f in wasmImportFunctions){
-            typeSection.Add([WasmHelper.functionType, WasmHelper.emptyArray, ..WasmHelper.Return(Valtype.Void)]);
+            typeSection.Add([
+                WasmHelper.functionType, 
+                ..WasmHelper.Vector(f.parameters.Select(p=>(byte)p.valtype).ToArray()), 
+                ..WasmHelper.Return(f.returnType)]);
         }
         foreach(var f in wasmFunctions){
-            typeSection.Add([WasmHelper.functionType, WasmHelper.emptyArray, ..WasmHelper.Return(Valtype.I32)]);
+            typeSection.Add([
+                WasmHelper.functionType,
+                ..WasmHelper.Vector(f.parameters.Select(p=>(byte)p.valtype).ToArray()),
+                ..WasmHelper.Return(f.returnType)]);
         }
 
         List<byte[]> funcSection = [];
@@ -262,10 +282,21 @@ class WasmEmitter(string filePath){
         return wasm;
     }
 
+    string EmitJavascriptParameters(WasmVariable[] variables){
+        string result = "(";
+        for(var i=0;i<variables.Length;i++){
+            result+=variables[i].name;
+            if(i<variables.Length-1){
+                result+=",";
+            }
+        }
+        return result + ")";
+    }
+
     public void EmitHtml(){
         var importString = "";
         foreach(var f in wasmImportFunctions){
-            importString += "imports.env."+f.name+" = function(){\n";
+            importString += "imports.env."+f.name+" = function"+EmitJavascriptParameters(f.parameters)+"{\n";
             importString += f.javascript;
             importString += "}\n";
         }

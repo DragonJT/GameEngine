@@ -20,8 +20,12 @@ static class Compiler
             } 
         }
         else if(expression is InvocationExpressionSyntax invocationExpressionSyntax){
+            List<WasmInstruction> argInstructions = [];
+            foreach(var arg in invocationExpressionSyntax.ArgumentList.Arguments){
+                argInstructions.AddRange(CompileExpression(arg.Expression));
+            }
             if (invocationExpressionSyntax.Expression is IdentifierNameSyntax identifierName){
-                return [new (Opcode.call, identifierName.ToString())];
+                return [..argInstructions, new (Opcode.call, identifierName.ToString())];
             }
             else{
                 throw new Exception("Expecting identifiername syntax");
@@ -56,12 +60,12 @@ static class Compiler
                          .FirstOrDefault();
         
         var body = method!.Body;
-        var wasmFunction = new WasmFunction(true, "Run");
+        var wasmFunction = new WasmFunction(true, Valtype.I32, "Run", []);
         foreach(var statement in body!.Statements){
             wasmFunction.instructions.AddRange(CompileStatement(statement));
         }
         var wasmEmitter = new WasmEmitter("Game/index.html");
-        wasmEmitter.wasmImportFunctions.Add(new WasmImportFunction("ConsoleLog", @"console.log(3);"));
+        wasmEmitter.wasmImportFunctions.Add(new (Valtype.Void, "ConsoleLog", [new (Valtype.I32, "i")], @"console.log(i);"));
         wasmEmitter.wasmFunctions.Add(wasmFunction);
         wasmEmitter.EmitHtml();
     }
