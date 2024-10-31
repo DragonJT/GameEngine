@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using System.Linq;
+
 #nullable disable
 delegate IntPtr glAccumDelegate(uint op, float value);
 delegate IntPtr glActiveShaderProgramDelegate(uint pipeline, uint program);
