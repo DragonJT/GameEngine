@@ -1,4 +1,5 @@
 //https://github.com/SebLague/Text-Rendering MIT licence
+using System.Numerics;
 
 namespace SebText.FontLoading
 {
@@ -836,7 +837,7 @@ namespace SebText.FontLoading
                 Vector2 p1 = original[i + 1];
                 Vector2 p2 = original[i + 2];
 
-                if ((p1.y < MathF.Min(p0.y, p2.y) || p1.y > MathF.Max(p0.y, p2.y)))
+                if (p1.Y < MathF.Min(p0.Y, p2.Y) || p1.Y > MathF.Max(p0.Y, p2.Y))
                 {
                     var split = SplitAtTurningPointY(p0, p1, p2);
                     monotonic.Add(split.a1);
@@ -860,22 +861,22 @@ namespace SebText.FontLoading
             Vector2 c = p0;
 
             // Calculate turning point by setting gradient.y to 0: 2at + b = 0; therefore t = -b / 2a
-            float turningPointT = -b.y / (2 * a.y);
+            float turningPointT = -b.Y / (2 * a.Y);
             Vector2 turningPoint = a * turningPointT * turningPointT + b * turningPointT + c;
 
             // Calculate the new p1 point for curveA with points: p0, p1A, turningPoint
             // This is done by saying that p0 + gradient(t=0) * ? = p1A = (p1A.x, turningPoint.y)
             // Solve for lambda using the known turningPoint.y, and then solve for p1A.x
-            float lambdaA = (turningPoint.y - p0.y) / b.y;
-            float p1A_x = p0.x + b.x * lambdaA;
+            float lambdaA = (turningPoint.Y - p0.Y) / b.Y;
+            float p1A_x = p0.X + b.X * lambdaA;
 
             // Calculate the new p1 point for curveB with points: turningPoint, p1B, p2
             // This is done by saying that p2 + gradient(t=1) * ? = p1B = (p1B.x, turningPoint.y)
             // Solve for lambda using the known turningPoint.y, and then solve for p1B.x
-            float lambdaB = (turningPoint.y - p2.y) / (2 * a.y + b.y);
-            float p1B_x = p2.x + (2 * a.x + b.x) * lambdaB;
+            float lambdaB = (turningPoint.Y - p2.Y) / (2 * a.Y + b.Y);
+            float p1B_x = p2.X + (2 * a.X + b.X) * lambdaB;
 
-            return (new Vector2(p1A_x, turningPoint.y), turningPoint, new Vector2(p1B_x, turningPoint.y), p2);
+            return (new Vector2(p1A_x, turningPoint.Y), turningPoint, new Vector2(p1B_x, turningPoint.Y), p2);
         }
     }
 }

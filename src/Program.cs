@@ -9,7 +9,9 @@ using System.Globalization;
 #pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
 #pragma warning disable IDE1006 // Naming Styles
 
-static partial class ConvertJavascriptColor{
+partial class JsColor{
+    public float r, g, b, a = 1.0f;
+
     static readonly Dictionary<string, (int r, int g, int b)> NamedColors = new()
     {
         { "black", (0, 0, 0) },
@@ -22,10 +24,9 @@ static partial class ConvertJavascriptColor{
         { "magenta", (255, 0, 255) },
     };
 
-    public static Color Convert(string color)
+    public JsColor(string color)
     {
         int r = 0, g = 0, b = 0;
-        float a = 1.0f;
 
         // Check for hex format
         if (color.StartsWith("#"))
@@ -102,8 +103,9 @@ static partial class ConvertJavascriptColor{
             throw new ArgumentException("Unsupported color format");
         }
 
-        // Normalize to range 0-1
-        return new Color(r / 255f, g / 255f, b / 255f, a);
+        this.r = r / 255f;
+        this.g = g / 255f;
+        this.b = b / 255f;
     }
 
     private static (int r, int g, int b) HslToRgb(float h, float s, float l)
@@ -183,11 +185,11 @@ public static class console{
 public static class Graphics{    
 
     public static float GetHeight(){
-        return Program.fontRenderer!.Size.y;
+        return Program.fontRenderer!.Width;
     }
 
     public static float GetWidth(){
-        return Program.fontRenderer!.Size.x;
+        return Program.fontRenderer!.Height;
     }
 
     public static void Clear(string color){
@@ -196,11 +198,11 @@ public static class Graphics{
     }
 
     public static void FillText(float x, float y, string text, float fontSize, string color){
-        Program.fontRenderer!.FillText(new Vector2(x,y), text, fontSize / 200f, ConvertJavascriptColor.Convert(color));
+        Program.fontRenderer!.FillText(x, y, text, fontSize / 200f, new JsColor(color));
     }
 
     public static void FillRect(float x, float y, float width, float height, string color){
-        Program.fontRenderer!.FillRect(new Rect(x,y,width,height), ConvertJavascriptColor.Convert(color));
+        Program.fontRenderer!.FillRect(x, y, width, height, new JsColor(color));
     }
 }
 
@@ -289,7 +291,7 @@ static class Program{
     }
 
     static void CursorPosCallback(IntPtr window, double xpos, double ypos){
-        Vector2 scale = GLFWHelper.GetMonitorContentScale();
+        var scale = GLFWHelper.GetMonitorContentScale();
         Input.mousex = ((float)xpos)/scale.x;
         Input.mousey = ((float)ypos)/scale.y;
         RoslynRunner.mousemove?.Invoke(Input.mousex, Input.mousey);

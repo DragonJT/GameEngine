@@ -209,18 +209,18 @@ static class GLFW{
 }
 
 static class GLFWHelper {
-    public static Vector2i GetWindowSize(){
+    public static (int x, int y) GetWindowSize(){
         var w = Program.memory.Allocate(4);
         var h = Program.memory.Allocate(4);
         GLFW.glfwGetWindowSize(Program.window, w, h);
-        return new Vector2i(Marshal.PtrToStructure<int>(w), Marshal.PtrToStructure<int>(h));
+        return (Marshal.PtrToStructure<int>(w), Marshal.PtrToStructure<int>(h));
     }
 
-    public static Vector2 GetMonitorContentScale(){
+    public static (float x, float y) GetMonitorContentScale(){
         var xscale = Program.memory.Allocate(4);
         var yscale = Program.memory.Allocate(4);
         GLFW.glfwGetMonitorContentScale(Program.monitor, xscale, yscale);
-        return new Vector2(Marshal.PtrToStructure<float>(xscale), Marshal.PtrToStructure<float>(yscale));
+        return (Marshal.PtrToStructure<float>(xscale), Marshal.PtrToStructure<float>(yscale));
     }
 
     public static void SetMouseButtonCallback(MouseButtonCallbackDelegate mouseButtonCallbackDelegate){
@@ -243,11 +243,11 @@ static class GLFWHelper {
         GLFW.glfwSetCharCallback(Program.window, ptr);
     }
 
-    public static Vector2 GetCursorPosition(){
+    public static (float x, float y) GetCursorPosition(){
         var xptr = Program.memory.Allocate(8);
         var yptr = Program.memory.Allocate(8);
         GLFW.glfwGetCursorPos(Program.window, xptr, yptr);
-        return new Vector2((float)Marshal.PtrToStructure<double>(xptr), (float)Marshal.PtrToStructure<double>(yptr));
+        return((float)Marshal.PtrToStructure<double>(xptr), (float)Marshal.PtrToStructure<double>(yptr));
     }
 }
 
@@ -384,132 +384,6 @@ static class GLHelper{
     }
 }
 
-struct Rect(float x, float y, float width, float height){
-    public float x = x;
-    public float y = y;
-    public float width = width;
-    public float height = height;
-    public Vector2 Center => new (x + width*0.5f, y + height*0.5f);
-
-    public static Rect CreateFromStartEnd(Vector2 start, Vector2 end){
-        var center = (start + end) * 0.5f;
-        var size = new Vector2(MathF.Abs(end.x - start.x), MathF.Abs(end.y - start.y));
-        return CreateFromCenterSize(center, size);
-    }
-
-    public static Rect CreateFromCenterSize(Vector2 center, Vector2 size){
-        return new Rect(center.x - size.x*0.5f, center.y - size.y*0.5f, size.x, size.y);
-    }
-
-    public static bool Intersect(Rect a, Rect b){
-        var aCenter = a.Center;
-        var bCenter = b.Center;
-        Vector2 dist = aCenter - bCenter;
-        return MathF.Abs(dist.x) < (a.width + b.width) * 0.5f && MathF.Abs(dist.y) < (a.height + b.height) * 0.5f;
-    }
-
-    public Rect Translate(Vector2 translate){
-        return new Rect(x + translate.x, y + translate.y, width, height);
-    }
-}
-
-struct Color(float r, float g, float b, float a = 1){
-    public float r = r;
-    public float g = g;
-    public float b = b;
-    public float a = a;
-
-    public static Color RandomColor(Random random){
-        return new Color(random.NextSingle(), random.NextSingle(), random.NextSingle());
-    }
-
-    public static Color Blue => new (0,0,1);
-    public static Color Red => new (1,0,0);
-    public static Color Yellow => new (1,1,0);
-    public static Color Orange => new (1,0.5f,0);
-    public static Color Green => new (0,1,0);
-    public static Color Black => new (0,0,0);
-    public static Color White => new (1,1,1);
-    public static Color Magenta => new (1,0,1);
-    
-    public override string ToString() {
-        return "("+r+","+g+","+b+","+a+")";
-    }
-}
- 
-struct Vector2(float x, float y){
-    public float x = x;
-    public float y = y;
-    
-    public static Vector2 Zero => new (0,0);
-
-    public float Length(){
-        return MathF.Sqrt(x*x + y*y);
-    }
-
-    public Vector2 Normalized(){
-        var length = Length();
-        return new Vector2(x/length, y/length);
-    }
-
-    public static Vector2 operator -(Vector2 a, Vector2 b){
-        return new Vector2(a.x - b.x, a.y - b.y);
-    }
-
-    public static Vector2 operator +(Vector2 a, Vector2 b){
-        return new Vector2(a.x + b.x, a.y + b.y);
-    }
-
-    public static Vector2 operator *(Vector2 v, float f){
-        return new Vector2(v.x * f, v.y * f);
-    }
-
-    public static Vector2 operator *(float f, Vector2 v){
-        return new Vector2(v.x * f, v.y * f);
-    }
-
-    public static Vector2 operator /(Vector2 v, float f){
-        return new Vector2(v.x / f, v.y / f);
-    }
-
-    public static Vector2 operator -(Vector2 v){
-        return new Vector2(-v.x, -v.y);
-    }
-
-    public static Vector2 Direction(Vector2 a, Vector2 b){
-        return (b-a).Normalized();
-    }
-
-    public Vector2 PerpendicularClockwise(){
-        return new Vector2(y, -x);
-    }
-
-    public Vector2 PerpendicularCounterClockwise(){
-        return new Vector2(-y, x);
-    }
-
-    public static Vector2 Lerp(Vector2 a, Vector2 b, float amount){
-        return new Vector2(float.Lerp(a.x, b.x, amount), float.Lerp(a.y, b.y, amount));
-    }
-
-    public static Vector2 Bezier(Vector2 a, Vector2 b, Vector2 c, float amount){
-        return Lerp(Lerp(a,b,amount), Lerp(b,c,amount), amount);
-    }
-
-    public static float Dot(Vector2 a, Vector2 b){
-        return a.x * b.x + a.y * b.y;
-    }
-
-    public override string ToString(){
-        return "("+x+","+y+")";
-    }
-}
-
-struct Vector2i(int x, int y){
-    public int x = x;
-    public int y = y;
-}
-
 class DynamicTextureRed {
     uint id;
     public readonly int width;
@@ -594,12 +468,12 @@ class Renderer(Shader shader, Buffer vertices, Buffer indices){
 }
 
 class DynamicTextureRenderer2D {
-    public int Width => dynamicTextureRed.width;
-    public int Height => dynamicTextureRed.height;
+    public int TexWidth => dynamicTextureRed.width;
+    public int TexHeight => dynamicTextureRed.height;
     Renderer renderer;
     DynamicTextureRed dynamicTextureRed;
     uint vertexID;
-    public Vector2 Size;
+    public float screenWidth, screenHeight;
 
     public DynamicTextureRenderer2D(int width, int height){
         string vertexSource = @"#version 330 core
@@ -644,20 +518,23 @@ void main()
         dynamicTextureRed.UpdateData(bytes);
     }
 
-    public void DrawShape(Vector2[] points, Vector2[] uvs, Color color){
-        for(uint i=2;i<points.Length;i++){
-            renderer.indices.AddUintArray([vertexID, vertexID+i-1, vertexID+i]);
-        }
-        for(var i=0;i<points.Length;i++){
-            renderer.vertices.AddFloatArray([points[i].x, points[i].y, color.r, color.g, color.b, color.a, uvs[i].x, uvs[i].y]);
-            vertexID++;
+    public int AddPoint(float x, float y, float uvx, float uvy, JsColor color){
+        renderer.vertices.AddFloatArray([x, y, color.r, color.g, color.b, color.a, uvx, uvy]);
+        vertexID++;
+        return (int)vertexID - 1;
+    }
+
+    public void AddTriangles(int[] ids){
+        for(var i=2;i<ids.Length;i++){
+            renderer.indices.AddIntArray([ids[0], ids[i-1], ids[i]]);
         }
     }
 
     void CalculateSize(){
         var windowSize = GLFWHelper.GetWindowSize();
         var monitorScale = GLFWHelper.GetMonitorContentScale();
-        Size = new Vector2(windowSize.x / monitorScale.x, windowSize.y / monitorScale.y);
+        screenWidth = windowSize.x / monitorScale.x;
+        screenHeight = windowSize.y / monitorScale.y;
     }
 
     public void Draw(){
@@ -666,7 +543,7 @@ void main()
         renderer.UseShader();
         renderer.UpdateData();
         CalculateSize();
-        renderer.SetMatrix("projection", Matrix4x4.CreateOrthographicOffCenter(0, Size.x, Size.y, 0, -1, 1));
+        renderer.SetMatrix("projection", Matrix4x4.CreateOrthographicOffCenter(0, screenWidth, screenHeight, 0, -1, 1));
         renderer.SetVertexAttribPointers([2,4,2]);
         dynamicTextureRed.Bind();
         renderer.Draw();
@@ -675,22 +552,25 @@ void main()
     }
 }
 
-class CharacterData(char c, Vector2 uvMin, Vector2 uvMax, FontData.GlyphData glyphData){
+class CharacterData(char c, float uvMinX, float uvMinY, float uvMaxX, float uvMaxY, FontData.GlyphData glyphData){
     public char c = c;
-    public Vector2 uvMin = uvMin;
-    public Vector2 uvMax = uvMax;
+    public float uvMinX = uvMinX;
+    public float uvMinY = uvMinY;
+    public float uvMaxX = uvMaxX;
+    public float uvMaxY = uvMaxY;
     public FontData.GlyphData glyphData = glyphData;
 }
 
 class FontRenderer{
     byte[] bytes;
-    int width;
-    int height;
+    int texWidth;
+    int texHeight;
     FontData fontData;
     float fontScale;
     Dictionary<char, CharacterData> characterData = [];
     DynamicTextureRenderer2D dynamicTextureRenderer2D;
-    public Vector2 Size => dynamicTextureRenderer2D.Size;
+    public float Width => dynamicTextureRenderer2D.screenWidth;
+    public float Height => dynamicTextureRenderer2D.screenHeight;
 
     public float FontHeight(float characterScale){
         return 1800 * fontScale * characterScale;
@@ -721,9 +601,9 @@ class FontRenderer{
     public FontRenderer(string pathToFont, int textureSize, float fontScale){
         fontData = FontParser.Parse(pathToFont);
         dynamicTextureRenderer2D = new DynamicTextureRenderer2D(textureSize, textureSize);
-        width = textureSize;
-        height = textureSize;
-        bytes = new byte[width * height];
+        texWidth = textureSize;
+        texHeight = textureSize;
+        bytes = new byte[texWidth * texHeight];
         this.fontScale = fontScale;
         int x = 0;
         int y = (int)FontHeight(1);
@@ -737,11 +617,19 @@ class FontRenderer{
     }
 
     void SetPixel(int x, int y, byte value){
-        bytes[x + y * width] = value;
+        bytes[x + y * texWidth] = value;
     }
 
     byte GetPixel(int x, int y){
-        return bytes[x + y * width];
+        return bytes[x + y * texWidth];
+    }
+
+    static Vector2 Lerp(Vector2 a, Vector2 b, float amount){
+        return new Vector2(float.Lerp(a.X, b.X, amount), float.Lerp(a.Y, b.Y, amount));
+    }
+
+    static Vector2 Bezier(Vector2 a, Vector2 b, Vector2 c, float amount){
+        return Lerp(Lerp(a, b, amount), Lerp(b, c, amount), amount);
     }
 
     void FillCharacterOntoTexture(ref int posX, ref int posY, char c){
@@ -750,7 +638,7 @@ class FontRenderer{
             var minX = (int)(posX + glyphData.MinX * fontScale);
             var maxY = (int)(posY + glyphData.MaxY * fontScale);
             var maxX = (int)(posX + glyphData.MaxX * fontScale);
-            if(minX < 0 || maxX >= width || minY < 0 || maxY >= height){
+            if(minX < 0 || maxX >= texWidth || minY < 0 || maxY >= texHeight){
                 posX = 0;
                 posY += (int)LineHeight(1);
                 minY = (int)(posY + glyphData.MinY * fontScale);
@@ -758,9 +646,7 @@ class FontRenderer{
                 maxY = (int)(posY + glyphData.MaxY * fontScale);
                 maxX = (int)(posX + glyphData.MaxX * fontScale);
             }
-            var uvMin = new Vector2(minX/(float)width, minY/(float)height);
-            var uvMax = new Vector2(maxX/(float)width, maxY/(float)height);
-            characterData.Add(c, new CharacterData(c, uvMin, uvMax, glyphData));
+            characterData.Add(c, new CharacterData(c, minX/(float)texWidth, minY/(float)texHeight, maxX/(float)texWidth, maxY/(float)texHeight, glyphData));
             List<Vector2[]> contours = GlythHelper.CreateContoursWithImpliedPoints(glyphData, fontScale);
             for(var ci = 0; ci< contours.Count; ci++){
                 var contour = contours[ci];
@@ -768,15 +654,16 @@ class FontRenderer{
                     var dist = (contour[i] - contour[i+2]).Length();
                     int resolution = (int)(dist * 2);
                     for(var ti=0;ti<=resolution;ti++){
-                        var point = Vector2.Bezier(contour[i], contour[i+1], contour[i+2], ti/(float)resolution);
-                        var pointI = new Vector2i((int)point.x, (int)point.y);
-                        if(contour[i].y < contour[i+2].y){
-                            if(GetPixel(posX + pointI.x, posY + pointI.y) == 0){
-                                SetPixel(posX + pointI.x, posY + pointI.y, 254);
+                        var point = Bezier(contour[i], contour[i+1], contour[i+2], ti/(float)resolution);
+                        var xi = (int)point.X;
+                        var yi = (int)point.Y;
+                        if(contour[i].Y < contour[i+2].Y){
+                            if(GetPixel(posX + xi, posY + yi) == 0){
+                                SetPixel(posX + xi, posY + yi, 254);
                             }
                         }
                         else{
-                            SetPixel(posX + pointI.x, posY + pointI.y, 253);
+                            SetPixel(posX + xi, posY + yi, 253);
                         }
                     }
                 }
@@ -808,25 +695,24 @@ class FontRenderer{
         }
     }
 
-    public void FillRect(Rect rect, Color color){
-        Vector2[] points = [
-            new Vector2(rect.x, rect.y),
-            new Vector2(rect.x + rect.width, rect.y),
-            new Vector2(rect.x + rect.width, rect.y + rect.height),
-            new Vector2(rect.x, rect.y + rect.height)];
-        Vector2 uv = new Vector2(0.5f/width,0.5f/height);
-        Vector2[] uvs = [uv, uv, uv, uv];
-        dynamicTextureRenderer2D.DrawShape(points, uvs, color);
+    public void FillRect(float x, float y, float width, float height, JsColor color){
+        var uvx = 0.5f/width;
+        var uvy = 0.5f/height;
+        var a = dynamicTextureRenderer2D.AddPoint(x, y, uvx, uvy, color);
+        var b = dynamicTextureRenderer2D.AddPoint(x+width, y, uvx, uvy, color);
+        var c = dynamicTextureRenderer2D.AddPoint(x+width, y+height, uvx, uvy, color);
+        var d = dynamicTextureRenderer2D.AddPoint(x, y+height, uvx, uvy, color);
+        dynamicTextureRenderer2D.AddTriangles([a,b,c,d]);
     }
 
-    public void StrokeRect(Rect rect, Color color, float border){
-        FillRect(new Rect(rect.x, rect.y, rect.width, border), color);
-        FillRect(new Rect(rect.x, rect.y, border, height), color);
-        FillRect(new Rect(rect.x, rect.y + rect.height - border, width, border), color);
-        FillRect(new Rect(rect.x + rect.width - border, rect.y, border, height), color);
+    public void StrokeRect(float x, float y, float width, float height, JsColor color, float border){
+        FillRect(x, y, width, border, color);
+        FillRect(x, y, border, height, color);
+        FillRect(x, y + height - border, width, border, color);
+        FillRect(x + width - border, y, border, height, color);
     }
 
-    public float FillCharacter(Vector2 position, char c, float characterScale, Color color){
+    public float FillCharacter(float x, float y, char c, float characterScale, JsColor color){
         if(c == ' '){
             return FontHeight(characterScale) * 0.5f;
         }
@@ -837,28 +723,23 @@ class FontRenderer{
             var h = character.glyphData.Height * fontScale * characterScale;
             var fontHeight = FontHeight(characterScale);
 
-            Vector2[] points = [
-                new Vector2(position.x + minX, position.y + fontHeight - minY), 
-                new Vector2(position.x + minX + w, position.y + fontHeight - minY), 
-                new Vector2(position.x + minX + w, position.y + fontHeight - minY - h), 
-                new Vector2(position.x + minX, position.y + fontHeight - minY - h)];
-            Vector2[] uvs = [
-                character.uvMin, 
-                new Vector2(character.uvMax.x, character.uvMin.y), 
-                character.uvMax,
-                new Vector2(character.uvMin.x, character.uvMax.y)];
-            dynamicTextureRenderer2D.DrawShape(points, uvs, color);
+            var v1 = dynamicTextureRenderer2D.AddPoint(x + minX, y + fontHeight - minY, character.uvMinX, character.uvMinY, color);
+            var v2 = dynamicTextureRenderer2D.AddPoint(x + minX + w, y + fontHeight - minY, character.uvMaxX, character.uvMinY, color);
+            var v3 = dynamicTextureRenderer2D.AddPoint(x + minX + w, y + fontHeight - minY - h, character.uvMaxX, character.uvMaxY, color);
+            var v4 = dynamicTextureRenderer2D.AddPoint(x + minX, y + fontHeight - minY - h, character.uvMinX, character.uvMaxY, color);
+            dynamicTextureRenderer2D.AddTriangles([v1,v2,v3,v4]);
+
             return character.glyphData.AdvanceWidth * fontScale * characterScale;
         }
         return 0;
     }
 
-    public float FillText(Vector2 position, string text, float characterScale, Color color){
-        var x = 0f;
+    public float FillText(float x, float y, string text, float characterScale, JsColor color){
+        var deltax = 0f;
         foreach(var c in text){
-            x += FillCharacter(new Vector2(position.x + x, position.y), c, characterScale, color);
+            deltax += FillCharacter(x + deltax, y, c, characterScale, color);
         }
-        return x;
+        return deltax;
     }
 
     public void Draw(){
