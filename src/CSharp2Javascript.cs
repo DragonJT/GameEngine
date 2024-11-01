@@ -5,6 +5,20 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
 {
+    static string GetInitializerWhenNull(string typeName){
+        return typeName switch
+        {
+            "bool" => "false",
+            "float" => "0",
+            "int" => "0",
+            "double" => "0",
+            "long" => "0",
+            "string" => "''",
+            "char" => "''",
+            _ => throw new Exception("Unexpected type"),
+        };
+    }
+
     public override string VisitCompilationUnit(CompilationUnitSyntax compilationUnitSyntax)
     {
         var jsBuilder = new StringBuilder();
@@ -21,6 +35,10 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
                         jsBuilder.Append(className+"."+v.Identifier.Text);
                         if(v.Initializer!=null){
                             jsBuilder.AppendLine("="+Visit(v.Initializer.Value)+";");
+                        }
+                        else{
+                            var type = f.Declaration.Type.ToString();
+                            jsBuilder.AppendLine("="+GetInitializerWhenNull(type)+";");
                         }
                     }
                 }
@@ -181,7 +199,8 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
                 return c.Identifier.Text;
             }
         }
-        if(nodeString == "Input" || nodeString == "Graphics" || nodeString == "console"){
+        string[] javascriptClassNames = ["Input", "Graphics", "console", "Math"];
+        if(javascriptClassNames.Contains(nodeString)){
             return nodeString;
         }
         throw new Exception("Cant find variable declaration: "+node.ToString());
@@ -202,7 +221,7 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
                 jsBuilder.Append(Visit(variable.Initializer.Value));
             }
 
-            jsBuilder.AppendLine(";"); 
+            jsBuilder.Append(';'); 
         }
         return jsBuilder.ToString();
     }
@@ -265,7 +284,7 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
         if (node.Else != null)
         {
             jsBuilder.AppendLine("} else {");
-            jsBuilder.AppendLine(Visit(node.Else.Statement));
+            jsBuilder.Append(Visit(node.Else.Statement));
             jsBuilder.AppendLine("}");
         }
         else
@@ -380,6 +399,56 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
             return $"{array}.length - {index}";
         }
         return operand.ToString();
+    }
+
+    public override string VisitReturnStatement(ReturnStatementSyntax node)
+    {
+        var jsBuilder = new StringBuilder();
+        var method = GetNodeInParent<MethodDeclarationSyntax>(node)!;
+        if (method.ReturnType is TupleTypeSyntax tupleType)
+        {
+            if (node.Expression is TupleExpressionSyntax tupleExpressionSyntax)
+            {
+                jsBuilder.Append("return {");
+                var arguments = tupleExpressionSyntax.Arguments;
+                var elements = tupleType.Elements;
+
+                for(var i = 0;i < arguments.Count; i++){
+                    var expression = Visit(arguments[i].Expression);
+                    var name = elements[i].Identifier.Text;
+                    jsBuilder.Append($"{name}:{expression}");
+
+                    if(i<arguments.Count-1){
+                        jsBuilder.Append(", ");
+                    }
+                }
+                jsBuilder.Append('}');
+                return jsBuilder.ToString();
+            }
+            else
+            {
+                throw new Exception("return statement doesnt have tuple");
+            }
+        }
+        else{
+            throw new Exception("Expecting tuple to method returntype to have tuple");
+        }
+    }
+
+    public override string VisitPrefixUnaryExpression(PrefixUnaryExpressionSyntax node)
+    {
+        var operatorKind = node.OperatorToken.Kind();
+        var operand = Visit(node.Operand);
+        return operatorKind switch
+        {
+            SyntaxKind.PlusPlusToken => $"++{operand}",
+            SyntaxKind.MinusMinusToken => $"--{operand}",
+            SyntaxKind.ExclamationToken => $"!{operand}",
+            SyntaxKind.PlusToken => $"+{operand}",
+            SyntaxKind.MinusToken => $"-{operand}",
+            SyntaxKind.TildeToken => $"~{operand}",
+            _ => throw new Exception("operatorkind not expected: " + operatorKind),
+        };
     }
 
     public override string? DefaultVisit(SyntaxNode node)

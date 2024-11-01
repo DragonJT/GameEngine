@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Test</title>
+    <title>Asteroids</title>
   </head>
   <body>
     <script>
@@ -68,65 +68,75 @@ Graphics.points = [];
 
 var lastUpdate = Date.now();
         
-class Test {
+class Asteroids {
 static KeyDown(key) {
 if (key.length == 1) {
-Test.text += key[0];
+Asteroids.text += key[0];
 
 } else {
 if (key == "Backspace") {
-if (Test.text.length > 0) {
-Test.text = Test.text.slice(0, Test.text.length - 1);
+if (Asteroids.text.length > 0) {
+Asteroids.text = Asteroids.text.slice(0, Asteroids.text.length - 1);
 
 }
 
 
 }
-
 }
 
 }
-static DrawTriangle(x, y, radius, color) {
-Graphics.AddPoint(x - radius, y + radius);
-Graphics.AddPoint(x, y - radius);
-Graphics.AddPoint(x + radius, y + radius);
+static RotatePoint(x, y, angleInDegrees) {
+var angleInRadians = angleInDegrees * Math.PI / 180;
+var rotatedX = x * Math.cos(angleInRadians) - y * Math.sin(angleInRadians);
+var rotatedY = x * Math.sin(angleInRadians) + y * Math.cos(angleInRadians);
+return {x:rotatedX, y:rotatedY}
+}
+static DrawTriangle(x, y, radius, angle, color) {
+var p1 = Asteroids.RotatePoint(-radius, radius, angle);
+var p2 = Asteroids.RotatePoint(0, -radius, angle);
+var p3 = Asteroids.RotatePoint(radius, radius, angle);
+Graphics.AddPoint(p1.x + x, p1.y + y);
+Graphics.AddPoint(p2.x + x, p2.y + y);
+Graphics.AddPoint(p3.x + x, p3.y + y);
 Graphics.Fill(color);
 }
 static Draw(deltaTime) {
 Graphics.Clear("rgb(180,180,180)");
 Graphics.FillText(100, 100, "HelloWorld", 60, "cyan");
-Graphics.FillText(50, 200, Test.text, 40, "green");
-Graphics.FillText(100, Test.y, "BOO", 90, "blue");
+Graphics.FillText(50, 200, Asteroids.text, 40, "green");
+Graphics.FillText(100, Asteroids.y, "BOO", 90, "blue");
 Graphics.FillRect(Input.mousex, Input.mousey, 10, 10, "yellow");
-Test.DrawTriangle(Graphics.GetWidth() / 2, Graphics.GetHeight() / 2, 20, "magenta");
-Test.y += Graphics.GetHeight() * deltaTime * 0.5;
-if (Test.y > Graphics.GetHeight()) {
-Test.y = 0;
+Asteroids.DrawTriangle(Graphics.GetWidth() / 2, Graphics.GetHeight() / 2, 20, Asteroids.angle, "magenta");
+Asteroids.y += Graphics.GetHeight() * deltaTime * 0.5;
+Asteroids.angle += 180 * deltaTime;
+if (Asteroids.y > Graphics.GetHeight()) {
+Asteroids.y = 0;
 
 }
 
 }
 }
 
-Test.y=0;
-Test.text="";
+Asteroids.y=0;
+Asteroids.text="";
+Asteroids.angle=0;
 
 function KeyDown(e){
-    Test.KeyDown(e.key);
+    Asteroids.KeyDown(e.key);
 }
 addEventListener('keydown', KeyDown);
 function MouseMove(e){
     Input.mousex = e.clientX;
     Input.mousey = e.clientY;
-    if(Test.MouseMove){
-        Test.MouseMove(e.clientX, e.clientY);
+    if(Asteroids.MouseMove){
+        Asteroids.MouseMove(e.clientX, e.clientY);
     }
 }
 addEventListener('mousemove', MouseMove);
 function Draw(){
     var now = Date.now();
-    if(Test.Draw){
-        Test.Draw((now - lastUpdate)/1000);
+    if(Asteroids.Draw){
+        Asteroids.Draw((now - lastUpdate)/1000);
     }
     lastUpdate = now;
     requestAnimationFrame(Draw);

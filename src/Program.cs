@@ -111,8 +111,8 @@ partial class JsColor{
 
     private static (int r, int g, int b) HslToRgb(float h, float s, float l)
     {
-        float c = (1 - Math.Abs(2 * l - 1)) * s;
-        float x = c * (1 - Math.Abs((h / 60) % 2 - 1));
+        float c = (1 - System.Math.Abs(2 * l - 1)) * s;
+        float x = c * (1 - System.Math.Abs((h / 60) % 2 - 1));
         float m = l - c / 2;
 
         float r = 0, g = 0, b = 0;
@@ -174,6 +174,18 @@ public static class Input{
                 keys.Remove(jsKey);
             }
         }
+    }
+}
+
+public static class Math{
+    public const float PI = 3.14159265359f;
+
+    public static float cos(float radians){
+        return (float)System.Math.Cos(radians);
+    }   
+
+    public static float sin(float radians){
+        return (float)System.Math.Sin(radians);
     }
 }
 
@@ -317,7 +329,7 @@ static class Program{
     }
 
     static void Main(){
-        string projectName = "Test";
+        string projectName = "Asteroids";
         if(GLFW.glfwInit() == 0){
             throw new Exception("Can't init glfw");
         }
@@ -331,47 +343,8 @@ static class Program{
         GLFWHelper.SetMouseButtonCallback(MouseButtonCallback);
         var mousePosition = GLFWHelper.GetCursorPosition();
         CursorPosCallback(window, mousePosition.x, mousePosition.y);
-        
-        string code = @"
-            static class Test
-            {
-                static float y = 0;
-                static string text = """";
 
-                static void KeyDown(string key){
-                    if(key.Length == 1){
-                        text += (char)key[0];
-                    }
-                    else if(key == ""Backspace""){
-                        if(text.Length > 0){
-                            text = text[0..^1];
-                        }
-                    }
-                }
-
-                static void DrawTriangle(float x, float y, float radius, string color){
-                    Graphics.AddPoint(x - radius,y + radius);
-                    Graphics.AddPoint(x, y - radius);
-                    Graphics.AddPoint(x + radius, y + radius);
-                    Graphics.Fill(color);
-                }
-
-                static void Draw(float deltaTime)
-                {
-                    Graphics.Clear(""rgb(180,180,180)"");
-                    Graphics.FillText(100,100,""HelloWorld"",60,""cyan"");
-                    Graphics.FillText(50,200,text,40,""green"");
-                    Graphics.FillText(100,y,""BOO"",90,""blue"");
-                    Graphics.FillRect(Input.mousex, Input.mousey, 10, 10, ""yellow"");
-                    DrawTriangle(Graphics.GetWidth() / 2, Graphics.GetHeight() / 2, 20, ""magenta"");
-                    y+=Graphics.GetHeight()*deltaTime*0.5f;
-                    if(y > Graphics.GetHeight()){
-                        y = 0;
-                    }
-                }
-            }
-        ";
-
+        var code = File.ReadAllText("Projects/"+projectName+".cs");
         RoslynRunner.Run(projectName, code);
         CSharp2Javascript.Run(projectName, code);
         fontRenderer = new FontRenderer("Fonts/Roboto-Medium.ttf", 2048, 0.1f);

@@ -367,7 +367,7 @@ namespace SebText.FontLoading
             for (int i = 0; i < contourCount; i++)
             {
                 int contourEndIndex = reader.ReadUInt16();
-                numPoints = Math.Max(numPoints, contourEndIndex + 1);
+                numPoints = System.Math.Max(numPoints, contourEndIndex + 1);
                 contourEndIndices[i] = contourEndIndex;
             }
 
@@ -433,8 +433,8 @@ namespace SebText.FontLoading
                     else points[i].Y = coordVal;
                     points[i].OnCurve = FlagBitIsSet(currFlag, OnCurve);
 
-                    min = Math.Min(min, coordVal);
-                    max = Math.Max(max, coordVal);
+                    min = System.Math.Min(min, coordVal);
+                    max = System.Math.Max(max, coordVal);
                 }
             }
         }
