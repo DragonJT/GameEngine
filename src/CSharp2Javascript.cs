@@ -279,17 +279,17 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
         string statement = Visit(node.Statement)!;
 
         jsBuilder.AppendLine($"if ({condition}) {{");
-        jsBuilder.AppendLine($"{statement}");
+        jsBuilder.Append(statement);
 
         if (node.Else != null)
         {
             jsBuilder.AppendLine("} else {");
             jsBuilder.Append(Visit(node.Else.Statement));
-            jsBuilder.AppendLine("}");
+            jsBuilder.Append('}');
         }
         else
         {
-            jsBuilder.AppendLine("}");
+            jsBuilder.Append('}');
         }
 
         return jsBuilder.ToString();

@@ -72,18 +72,12 @@ class Asteroids {
 static KeyDown(key) {
 if (key.length == 1) {
 Asteroids.text += key[0];
-
 } else {
 if (key == "Backspace") {
 if (Asteroids.text.length > 0) {
 Asteroids.text = Asteroids.text.slice(0, Asteroids.text.length - 1);
-
 }
-
-
-}
-}
-
+}}
 }
 static RotatePoint(x, y, angleInDegrees) {
 var angleInRadians = angleInDegrees * Math.PI / 180;
@@ -111,9 +105,7 @@ Asteroids.y += Graphics.GetHeight() * deltaTime * 0.5;
 Asteroids.angle += 180 * deltaTime;
 if (Asteroids.y > Graphics.GetHeight()) {
 Asteroids.y = 0;
-
 }
-
 }
 }
 
