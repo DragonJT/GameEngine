@@ -101,7 +101,7 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
 
     public override string VisitInvocationExpression(InvocationExpressionSyntax node)
     {
-        var expression = node.Expression.ToString();
+        var expression = Visit(node.Expression);
         var args = string.Join(", ", node.ArgumentList.Arguments.Select(Visit));
         return $"{expression}({args})";
     }
@@ -166,12 +166,22 @@ class CSharpToJavaScriptVisitor : CSharpSyntaxVisitor<string>
                 }
             }
         }
+        foreach(var m in currentClass.DescendantNodes().OfType<MethodDeclarationSyntax>()){
+            if(m.Identifier.Text == nodeString){
+                if(IsMethodStatic(m)){
+                    return currentClass.Identifier.Text+"."+m.Identifier.Text;
+                }
+                else{
+                    return "this."+m.Identifier.Text;
+                }
+            }
+        }
         foreach(var c in GetNodeInParent<CompilationUnitSyntax>(node)!.DescendantNodes().OfType<ClassDeclarationSyntax>()){
             if(c.Identifier.Text == nodeString){
                 return c.Identifier.Text;
             }
         }
-        if(nodeString == "Input"){
+        if(nodeString == "Input" || nodeString == "Graphics" || nodeString == "console"){
             return nodeString;
         }
         throw new Exception("Cant find variable declaration: "+node.ToString());
@@ -421,6 +431,20 @@ class Graphics{
         ctx.fillText(text,x,y+fontSize);
     }
 
+    static AddPoint(x, y){
+        Graphics.points.push({x,y});
+    }
+
+    static Fill(color){
+        ctx.beginPath();
+        for(var p of Graphics.points){
+            ctx.lineTo(p.x, p.y);
+        }
+        ctx.fillStyle = color;
+        ctx.fill();
+        Graphics.points = [];
+    }
+
     static GetWidth(){
         return ctx.canvas.width;
     }
@@ -431,6 +455,8 @@ class Graphics{
 }
 
 var ctx = CreateCanvas(800,600);
+Graphics.points = [];
+
 var lastUpdate = Date.now();
         ");
 

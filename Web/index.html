@@ -40,6 +40,20 @@ class Graphics{
         ctx.fillText(text,x,y+fontSize);
     }
 
+    static AddPoint(x, y){
+        Graphics.points.push({x,y});
+    }
+
+    static Fill(color){
+        ctx.beginPath();
+        for(var p of Graphics.points){
+            ctx.lineTo(p.x, p.y);
+        }
+        ctx.fillStyle = color;
+        ctx.fill();
+        Graphics.points = [];
+    }
+
     static GetWidth(){
         return ctx.canvas.width;
     }
@@ -50,6 +64,8 @@ class Graphics{
 }
 
 var ctx = CreateCanvas(800,600);
+Graphics.points = [];
+
 var lastUpdate = Date.now();
         
 class Test {
@@ -70,12 +86,19 @@ Test.text = Test.text.slice(0, Test.text.length - 1);
 }
 
 }
+static DrawTriangle(x, y, radius, color) {
+Graphics.AddPoint(x - radius, y + radius);
+Graphics.AddPoint(x, y - radius);
+Graphics.AddPoint(x + radius, y + radius);
+Graphics.Fill(color);
+}
 static Draw(deltaTime) {
-Graphics.Clear("rgb(40,40,40)");
+Graphics.Clear("rgb(180,180,180)");
 Graphics.FillText(100, 100, "HelloWorld", 60, "cyan");
 Graphics.FillText(50, 200, Test.text, 40, "green");
 Graphics.FillText(100, Test.y, "BOO", 90, "blue");
 Graphics.FillRect(Input.mousex, Input.mousey, 10, 10, "yellow");
+Test.DrawTriangle(Graphics.GetWidth() / 2, Graphics.GetHeight() / 2, 20, "magenta");
 Test.y += Graphics.GetHeight() * deltaTime * 0.5;
 if (Test.y > Graphics.GetHeight()) {
 Test.y = 0;

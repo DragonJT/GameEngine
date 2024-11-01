@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Numerics;
 
 #pragma warning disable CA1050 // Declare types in namespaces
 #pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
@@ -183,18 +184,27 @@ public static class console{
 }
 
 public static class Graphics{    
-
-    public static float GetHeight(){
-        return Program.fontRenderer!.Width;
-    }
+    static List<Vector2> points = [];
 
     public static float GetWidth(){
-        return Program.fontRenderer!.Height;
+        return Program.fontRenderer!.ScreenWidth;
+    }
+
+    public static float GetHeight(){
+        return Program.fontRenderer!.ScreenHeight;
     }
 
     public static void Clear(string color){
-        var windowSize = GLFWHelper.GetWindowSize();
-        FillRect(0, 0, windowSize.x, windowSize.y, color);
+        FillRect(0, 0, GetWidth(), GetHeight(), color);
+    }
+
+    public static void AddPoint(float x, float y){
+        points.Add(new Vector2(x, y));
+    }
+
+    public static void Fill(string color){
+        Program.fontRenderer!.FillPoly(points, new JsColor(color));
+        points.Clear();
     }
 
     public static void FillText(float x, float y, string text, float fontSize, string color){
@@ -280,7 +290,7 @@ static class Program{
         Input.KeyCallback(key, scancode, action, mods);
         bool shift = (mods & GLFW.GLFW_MOD_SHIFT) != 0;
         var jsKey = ConvertJavascriptInput.KeyToString(key, shift);
-        if(jsKey!=null){
+        if(jsKey!=null){ 
             if(action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT){
                 RoslynRunner.keydown?.Invoke(jsKey);
             }
@@ -339,13 +349,21 @@ static class Program{
                     }
                 }
 
+                static void DrawTriangle(float x, float y, float radius, string color){
+                    Graphics.AddPoint(x - radius,y + radius);
+                    Graphics.AddPoint(x, y - radius);
+                    Graphics.AddPoint(x + radius, y + radius);
+                    Graphics.Fill(color);
+                }
+
                 static void Draw(float deltaTime)
                 {
-                    Graphics.Clear(""rgb(40,40,40)"");
+                    Graphics.Clear(""rgb(180,180,180)"");
                     Graphics.FillText(100,100,""HelloWorld"",60,""cyan"");
                     Graphics.FillText(50,200,text,40,""green"");
                     Graphics.FillText(100,y,""BOO"",90,""blue"");
                     Graphics.FillRect(Input.mousex, Input.mousey, 10, 10, ""yellow"");
+                    DrawTriangle(Graphics.GetWidth() / 2, Graphics.GetHeight() / 2, 20, ""magenta"");
                     y+=Graphics.GetHeight()*deltaTime*0.5f;
                     if(y > Graphics.GetHeight()){
                         y = 0;

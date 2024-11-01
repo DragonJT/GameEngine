@@ -472,7 +472,7 @@ class DynamicTextureRenderer2D {
     public int TexHeight => dynamicTextureRed.height;
     Renderer renderer;
     DynamicTextureRed dynamicTextureRed;
-    uint vertexID;
+    public int vertexID;
     public float screenWidth, screenHeight;
 
     public DynamicTextureRenderer2D(int width, int height){
@@ -518,15 +518,15 @@ void main()
         dynamicTextureRed.UpdateData(bytes);
     }
 
-    public int AddPoint(float x, float y, float uvx, float uvy, JsColor color){
+    public int AddVertex(float x, float y, float uvx, float uvy, JsColor color){
         renderer.vertices.AddFloatArray([x, y, color.r, color.g, color.b, color.a, uvx, uvy]);
         vertexID++;
-        return (int)vertexID - 1;
+        return vertexID - 1;
     }
 
-    public void AddTriangles(int[] ids){
-        for(var i=2;i<ids.Length;i++){
-            renderer.indices.AddIntArray([ids[0], ids[i-1], ids[i]]);
+    public void AddTriangles(int vertexID, int length){
+        for(var i=2;i<length;i++){
+            renderer.indices.AddIntArray([vertexID, vertexID + i - 1, vertexID + i]);
         }
     }
 
@@ -569,8 +569,9 @@ class FontRenderer{
     float fontScale;
     Dictionary<char, CharacterData> characterData = [];
     DynamicTextureRenderer2D dynamicTextureRenderer2D;
-    public float Width => dynamicTextureRenderer2D.screenWidth;
-    public float Height => dynamicTextureRenderer2D.screenHeight;
+    public float ScreenWidth => dynamicTextureRenderer2D.screenWidth;
+    public float ScreenHeight => dynamicTextureRenderer2D.screenHeight;
+    public int VertexID => dynamicTextureRenderer2D.vertexID;
 
     public float FontHeight(float characterScale){
         return 1800 * fontScale * characterScale;
@@ -695,14 +696,25 @@ class FontRenderer{
         }
     }
 
+    public void FillPoly(List<Vector2> poly, JsColor color){
+        var uvx = 0.5f/texWidth;
+        var uvy = 0.5f/texHeight;
+        var vertexID = dynamicTextureRenderer2D.vertexID;
+        foreach(var p in poly){
+            dynamicTextureRenderer2D.AddVertex(p.X, p.Y, uvx, uvy, color);
+        }
+        dynamicTextureRenderer2D.AddTriangles(vertexID, poly.Count);
+    }
+
     public void FillRect(float x, float y, float width, float height, JsColor color){
-        var uvx = 0.5f/width;
-        var uvy = 0.5f/height;
-        var a = dynamicTextureRenderer2D.AddPoint(x, y, uvx, uvy, color);
-        var b = dynamicTextureRenderer2D.AddPoint(x+width, y, uvx, uvy, color);
-        var c = dynamicTextureRenderer2D.AddPoint(x+width, y+height, uvx, uvy, color);
-        var d = dynamicTextureRenderer2D.AddPoint(x, y+height, uvx, uvy, color);
-        dynamicTextureRenderer2D.AddTriangles([a,b,c,d]);
+        var uvx = 0.5f/texWidth;
+        var uvy = 0.5f/texHeight;
+        var vertexID = dynamicTextureRenderer2D.vertexID;
+        dynamicTextureRenderer2D.AddVertex(x, y, uvx, uvy, color);
+        dynamicTextureRenderer2D.AddVertex(x+width, y, uvx, uvy, color);
+        dynamicTextureRenderer2D.AddVertex(x+width, y+height, uvx, uvy, color);
+        dynamicTextureRenderer2D.AddVertex(x, y+height, uvx, uvy, color);
+        dynamicTextureRenderer2D.AddTriangles(vertexID, 4);
     }
 
     public void StrokeRect(float x, float y, float width, float height, JsColor color, float border){
@@ -723,11 +735,12 @@ class FontRenderer{
             var h = character.glyphData.Height * fontScale * characterScale;
             var fontHeight = FontHeight(characterScale);
 
-            var v1 = dynamicTextureRenderer2D.AddPoint(x + minX, y + fontHeight - minY, character.uvMinX, character.uvMinY, color);
-            var v2 = dynamicTextureRenderer2D.AddPoint(x + minX + w, y + fontHeight - minY, character.uvMaxX, character.uvMinY, color);
-            var v3 = dynamicTextureRenderer2D.AddPoint(x + minX + w, y + fontHeight - minY - h, character.uvMaxX, character.uvMaxY, color);
-            var v4 = dynamicTextureRenderer2D.AddPoint(x + minX, y + fontHeight - minY - h, character.uvMinX, character.uvMaxY, color);
-            dynamicTextureRenderer2D.AddTriangles([v1,v2,v3,v4]);
+            var vertexID = dynamicTextureRenderer2D.vertexID;
+            dynamicTextureRenderer2D.AddVertex(x + minX, y + fontHeight - minY, character.uvMinX, character.uvMinY, color);
+            dynamicTextureRenderer2D.AddVertex(x + minX + w, y + fontHeight - minY, character.uvMaxX, character.uvMinY, color);
+            dynamicTextureRenderer2D.AddVertex(x + minX + w, y + fontHeight - minY - h, character.uvMaxX, character.uvMaxY, color);
+            dynamicTextureRenderer2D.AddVertex(x + minX, y + fontHeight - minY - h, character.uvMinX, character.uvMaxY, color);
+            dynamicTextureRenderer2D.AddTriangles(vertexID, 4);
 
             return character.glyphData.AdvanceWidth * fontScale * characterScale;
         }
